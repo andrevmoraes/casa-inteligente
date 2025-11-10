@@ -1,3 +1,25 @@
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('Service Worker registrado'))
+        .catch((err) => console.log('Service Worker falhou:', err));
+}
+
+// Prevenir zoom com gestos (pinch)
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('gesturechange', (e) => e.preventDefault());
+document.addEventListener('gestureend', (e) => e.preventDefault());
+
+// Prevenir zoom com duplo toque
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
 // Estado da aplicação
 let password = '';
 let isUnlocking = false;
@@ -83,15 +105,15 @@ lockScreen.addEventListener('touchend', () => {
     if (!isDragging) return;
     
     const diff = touchStartY - touchCurrentY;
-    const threshold = numpadHeight * 0.4;
+    const threshold = 30; // Mínimo de 30px de arrasto
     
-    // Subindo
+    // Subindo - abre o teclado
     if (diff > threshold) {
         lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
         numpadContainer.classList.add('visible');
         numpadContainer.style.transform = 'translateY(0)';
     }
-    // Descendo para fechar
+    // Descendo - fecha o teclado
     else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
         lockScreen.style.transform = '';
         numpadContainer.classList.remove('visible');
@@ -152,15 +174,15 @@ document.addEventListener('mouseup', (e) => {
     if (!isMouseDragging) return;
     
     const diff = mouseStartY - e.clientY;
-    const threshold = numpadHeight * 0.4;
+    const threshold = 30; // Mínimo de 30px de arrasto
     
-    // Subindo
+    // Subindo - abre o teclado
     if (diff > threshold) {
         lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
         numpadContainer.classList.add('visible');
         numpadContainer.style.transform = 'translateY(0)';
     }
-    // Descendo para fechar
+    // Descendo - fecha o teclado
     else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
         lockScreen.style.transform = '';
         numpadContainer.classList.remove('visible');

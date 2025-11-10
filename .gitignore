@@ -16,3 +16,8 @@ npm-debug.log*
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Temporários
+generate-icons.html
+ICONS-README.md
+icon-192.svg
