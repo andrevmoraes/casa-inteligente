@@ -27,10 +27,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "env": {
-    "DOOR_PASSWORD": "@door-password",
-    "LOCK_API_KEY": "@lock-api-key",
-    "LOCK_DEVICE_ID": "@lock-device-id"
-  }
+  ]
 }
