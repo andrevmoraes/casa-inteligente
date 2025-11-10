@@ -4,17 +4,23 @@ let isUnlocking = false;
 let touchStartY = 0;
 let touchCurrentY = 0;
 let isDragging = false;
+let numpadHeight = 0;
 
 // Elementos
 const lockScreen = document.getElementById('lockScreen');
-const authScreen = document.getElementById('authScreen');
+const numpadContainer = document.getElementById('numpadContainer');
+const successScreen = document.getElementById('successScreen');
 const timeDisplay = document.getElementById('timeDisplay');
 const dateDisplay = document.getElementById('dateDisplay');
 const passwordDots = document.getElementById('passwordDots');
-const feedbackMessage = document.getElementById('feedbackMessage');
-const unlockBtn = document.getElementById('unlockBtn');
-const backBtn = document.getElementById('backBtn');
+const passwordPlaceholder = document.getElementById('passwordPlaceholder');
+const passwordError = document.getElementById('passwordError');
 const numButtons = document.querySelectorAll('.num-btn');
+
+// Calcular altura do teclado
+setTimeout(() => {
+    numpadHeight = numpadContainer.offsetHeight;
+}, 100);
 
 // Atualizar relógio
 function updateClock() {
@@ -46,6 +52,7 @@ lockScreen.addEventListener('touchstart', (e) => {
     touchStartY = e.touches[0].clientY;
     isDragging = true;
     lockScreen.classList.add('dragging');
+    numpadContainer.classList.add('dragging');
 });
 
 lockScreen.addEventListener('touchmove', (e) => {
@@ -54,8 +61,21 @@ lockScreen.addEventListener('touchmove', (e) => {
     touchCurrentY = e.touches[0].clientY;
     const diff = touchStartY - touchCurrentY;
     
+    // Subindo (diff > 0)
     if (diff > 0) {
+        const progress = Math.min(diff / numpadHeight, 1);
         lockScreen.style.transform = `translateY(-${diff}px)`;
+        numpadContainer.style.transform = `translateY(${(1 - progress) * 100}%)`;
+    }
+    // Descendo (diff < 0) - só funciona se o teclado estiver visível
+    else if (diff < 0 && numpadContainer.classList.contains('visible')) {
+        const absDiff = Math.abs(diff);
+        const progress = Math.min(absDiff / numpadHeight, 1);
+        
+        // Tela de bloqueio desce junto
+        lockScreen.style.transform = `translateY(-${numpadHeight - absDiff}px)`;
+        // Teclado desce
+        numpadContainer.style.transform = `translateY(${progress * 100}%)`;
     }
 });
 
@@ -63,22 +83,37 @@ lockScreen.addEventListener('touchend', () => {
     if (!isDragging) return;
     
     const diff = touchStartY - touchCurrentY;
+    const threshold = numpadHeight * 0.4;
     
-    if (diff > 100) {
-        // Deslizou suficiente, mostrar tela de auth
-        lockScreen.style.transform = 'translateY(-100vh)';
-        setTimeout(() => {
-            lockScreen.classList.add('hidden');
-            authScreen.classList.remove('hidden');
-            lockScreen.style.transform = '';
-        }, 300);
-    } else {
-        // Voltar posição original
+    // Subindo
+    if (diff > threshold) {
+        lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+        numpadContainer.classList.add('visible');
+        numpadContainer.style.transform = 'translateY(0)';
+    }
+    // Descendo para fechar
+    else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
         lockScreen.style.transform = '';
+        numpadContainer.classList.remove('visible');
+        numpadContainer.style.transform = 'translateY(100%)';
+        password = '';
+        updatePasswordDisplay();
+        clearFeedback();
+    }
+    // Volta para posição atual
+    else {
+        if (numpadContainer.classList.contains('visible')) {
+            lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+            numpadContainer.style.transform = 'translateY(0)';
+        } else {
+            lockScreen.style.transform = '';
+            numpadContainer.style.transform = 'translateY(100%)';
+        }
     }
     
     isDragging = false;
     lockScreen.classList.remove('dragging');
+    numpadContainer.classList.remove('dragging');
 });
 
 // Mouse handlers (para desktop)
@@ -89,6 +124,7 @@ lockScreen.addEventListener('mousedown', (e) => {
     mouseStartY = e.clientY;
     isMouseDragging = true;
     lockScreen.classList.add('dragging');
+    numpadContainer.classList.add('dragging');
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -96,8 +132,19 @@ document.addEventListener('mousemove', (e) => {
     
     const diff = mouseStartY - e.clientY;
     
+    // Subindo (diff > 0)
     if (diff > 0) {
+        const progress = Math.min(diff / numpadHeight, 1);
         lockScreen.style.transform = `translateY(-${diff}px)`;
+        numpadContainer.style.transform = `translateY(${(1 - progress) * 100}%)`;
+    }
+    // Descendo (diff < 0) - só funciona se o teclado estiver visível
+    else if (diff < 0 && numpadContainer.classList.contains('visible')) {
+        const absDiff = Math.abs(diff);
+        const progress = Math.min(absDiff / numpadHeight, 1);
+        
+        lockScreen.style.transform = `translateY(-${numpadHeight - absDiff}px)`;
+        numpadContainer.style.transform = `translateY(${progress * 100}%)`;
     }
 });
 
@@ -105,24 +152,49 @@ document.addEventListener('mouseup', (e) => {
     if (!isMouseDragging) return;
     
     const diff = mouseStartY - e.clientY;
+    const threshold = numpadHeight * 0.4;
     
-    if (diff > 100) {
-        lockScreen.style.transform = 'translateY(-100vh)';
-        setTimeout(() => {
-            lockScreen.classList.add('hidden');
-            authScreen.classList.remove('hidden');
-            lockScreen.style.transform = '';
-        }, 300);
-    } else {
+    // Subindo
+    if (diff > threshold) {
+        lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+        numpadContainer.classList.add('visible');
+        numpadContainer.style.transform = 'translateY(0)';
+    }
+    // Descendo para fechar
+    else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
         lockScreen.style.transform = '';
+        numpadContainer.classList.remove('visible');
+        numpadContainer.style.transform = 'translateY(100%)';
+        password = '';
+        updatePasswordDisplay();
+        clearFeedback();
+    }
+    // Volta para posição atual
+    else {
+        if (numpadContainer.classList.contains('visible')) {
+            lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+            numpadContainer.style.transform = 'translateY(0)';
+        } else {
+            lockScreen.style.transform = '';
+            numpadContainer.style.transform = 'translateY(100%)';
+        }
     }
     
     isMouseDragging = false;
     lockScreen.classList.remove('dragging');
+    numpadContainer.classList.remove('dragging');
 });
 
 // Atualizar display de senha
 function updatePasswordDisplay() {
+    // Mostrar/ocultar placeholder
+    if (password.length > 0) {
+        passwordPlaceholder.classList.add('hidden');
+    } else {
+        passwordPlaceholder.classList.remove('hidden');
+    }
+    
+    // Atualizar dots
     passwordDots.innerHTML = '';
     for (let i = 0; i < password.length; i++) {
         const dot = document.createElement('div');
@@ -138,104 +210,96 @@ numButtons.forEach(btn => {
         const action = btn.dataset.action;
         
         if (num && password.length < 8) {
+            // Esconde erro quando começa a digitar
+            passwordError.classList.add('hidden');
+            
             password += num;
             updatePasswordDisplay();
-            clearFeedback();
+            
+            // Verifica automaticamente a senha
+            checkPasswordAutomatically();
         } else if (action === 'delete' && password.length > 0) {
+            // Esconde erro quando apaga
+            passwordError.classList.add('hidden');
+            
             password = password.slice(0, -1);
             updatePasswordDisplay();
-            clearFeedback();
-        } else if (action === 'clear') {
-            password = '';
-            updatePasswordDisplay();
-            clearFeedback();
         }
     });
 });
 
-// Limpar feedback
-function clearFeedback() {
-    feedbackMessage.textContent = '';
-    feedbackMessage.className = 'feedback-message';
-}
+// Funções removidas (não usadas mais)
+function clearFeedback() {}
+function showFeedback() {}
 
-// Mostrar feedback
-function showFeedback(message, type) {
-    feedbackMessage.textContent = message;
-    feedbackMessage.className = `feedback-message ${type}`;
-}
-
-// Desbloquear porta
-unlockBtn.addEventListener('click', async () => {
+// Verificar senha automaticamente
+async function checkPasswordAutomatically() {
     if (isUnlocking || password.length === 0) return;
     
-    isUnlocking = true;
-    unlockBtn.classList.add('loading');
-    unlockBtn.disabled = true;
-    clearFeedback();
+    // Senha configurada (temporário - simulação local)
+    const CORRECT_PASSWORD = '1234'; // Altere aqui sua senha de teste
     
-    try {
-        const response = await fetch('/api/unlock', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ password })
-        });
+    // Só verifica se tiver pelo menos 4 dígitos
+    if (password.length < 4) return;
+    
+    isUnlocking = true;
+    
+    // Verificação instantânea
+    if (password === CORRECT_PASSWORD) {
+        // Senha correta - abre imediatamente
+        // Tela de bloqueio termina de subir
+        lockScreen.classList.add('unlocking');
         
-        const data = await response.json();
+        // Teclado desce
+        numpadContainer.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        numpadContainer.style.transform = 'translateY(100%)';
         
-        if (response.ok && data.success) {
-            showFeedback('✓ Porta desbloqueada com sucesso!', 'success');
-            password = '';
-            updatePasswordDisplay();
-            
-            // Voltar para tela de bloqueio após 2 segundos
-            setTimeout(() => {
-                authScreen.classList.add('hidden');
-                lockScreen.classList.remove('hidden');
-                clearFeedback();
-            }, 2000);
-        } else {
-            showFeedback(data.message || '✗ Senha incorreta', 'error');
-            password = '';
-            updatePasswordDisplay();
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showFeedback('✗ Erro de conexão. Tente novamente.', 'error');
-    } finally {
+        // Mostra tela de sucesso
+        setTimeout(() => {
+            successScreen.classList.remove('hidden');
+        }, 200);
+        
+    } else {
+        // Senha incorreta - mostra erro instantaneamente
+        passwordDots.innerHTML = '';
+        passwordPlaceholder.classList.add('hidden');
+        passwordError.classList.remove('hidden');
+        password = '';
         isUnlocking = false;
-        unlockBtn.classList.remove('loading');
-        unlockBtn.disabled = false;
     }
-});
+}
 
-// Voltar para tela de bloqueio
-backBtn.addEventListener('click', () => {
-    authScreen.classList.add('hidden');
-    lockScreen.classList.remove('hidden');
+// Desbloquear porta (não é mais usado diretamente, mas mantemos para compatibilidade)
+// A verificação agora é automática em checkPasswordAutomatically()
+
+// Resetar para tela de bloqueio
+function resetToLockScreen() {
+    successScreen.classList.add('hidden');
+    lockScreen.classList.remove('unlocking');
+    lockScreen.style.transform = '';
+    numpadContainer.classList.remove('visible');
+    numpadContainer.style.transform = 'translateY(100%)';
     password = '';
+    passwordError.classList.add('hidden');
     updatePasswordDisplay();
-    clearFeedback();
-});
+}
 
 // Suporte a teclado físico
 document.addEventListener('keydown', (e) => {
-    if (authScreen.classList.contains('hidden')) return;
+    // Só funciona se o teclado estiver visível
+    if (!numpadContainer.classList.contains('visible')) return;
     
     if (e.key >= '0' && e.key <= '9' && password.length < 8) {
+        passwordError.classList.add('hidden');
         password += e.key;
         updatePasswordDisplay();
-        clearFeedback();
+        checkPasswordAutomatically();
     } else if (e.key === 'Backspace' && password.length > 0) {
         e.preventDefault();
+        passwordError.classList.add('hidden');
         password = password.slice(0, -1);
         updatePasswordDisplay();
-        clearFeedback();
-    } else if (e.key === 'Enter' && password.length > 0) {
-        unlockBtn.click();
     } else if (e.key === 'Escape') {
-        backBtn.click();
+        resetToLockScreen();
     }
 });

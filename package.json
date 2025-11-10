@@ -4,7 +4,7 @@
   "description": "Sistema de controle remoto para fechadura inteligente",
   "main": "index.html",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "node server.js",
     "deploy": "vercel --prod"
   },
   "keywords": ["smart-lock", "home-automation", "nfc"],
