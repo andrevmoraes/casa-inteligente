@@ -39,9 +39,16 @@ const passwordPlaceholder = document.getElementById('passwordPlaceholder');
 const passwordError = document.getElementById('passwordError');
 const numButtons = document.querySelectorAll('.num-btn');
 
-// Calcular altura do teclado
+// Calcular altura do teclado e abrir automaticamente
 setTimeout(() => {
     numpadHeight = numpadContainer.offsetHeight;
+    
+    // Abre o teclado automaticamente com animação suave
+    setTimeout(() => {
+        lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+        numpadContainer.classList.add('visible');
+        numpadContainer.style.transform = 'translateY(0)';
+    }, 200);
 }, 100);
 
 // Atualizar relógio
