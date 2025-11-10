@@ -23,11 +23,14 @@ html {
 body {
     width: 100%;
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport height para mobile */
     overflow: hidden;
     background: #000;
     position: fixed;
     overscroll-behavior: none;
     touch-action: manipulation;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .hidden {
@@ -38,6 +41,7 @@ body {
 .lock-screen {
     width: 100%;
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
     background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
                 url('https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&h=1080&fit=crop') center/cover;
     display: flex;
@@ -50,6 +54,8 @@ body {
     position: relative;
     z-index: 10;
     will-change: transform;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .lock-screen.dragging {
@@ -68,6 +74,7 @@ body {
     flex-direction: column;
     justify-content: flex-end;
     padding: 40px 30px;
+    padding-bottom: max(40px, env(safe-area-inset-bottom, 40px));
 }
 
 .time-display {
@@ -105,6 +112,7 @@ body {
     -webkit-backdrop-filter: blur(40px);
     backdrop-filter: blur(40px);
     padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
     transform: translateY(100%);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 5;
@@ -189,6 +197,7 @@ body {
     background: rgba(255, 255, 255, 0.1);
     padding: 0;
     margin: 0;
+    padding-bottom: 0; /* safe-area já está no container */
 }
 
 .num-btn {
@@ -241,12 +250,15 @@ body {
     left: 0;
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     background: #000;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .success-content {
@@ -311,5 +323,40 @@ body {
     
     .lock-content {
         padding: 40px 20px 30px;
+    }
+}
+
+/* Suporte específico para iPhone e safe areas */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .time-display {
+        padding-top: max(0px, env(safe-area-inset-top, 0px));
+    }
+    
+    /* Garantir que o teclado fique acima da home bar do iPhone */
+    .numpad-container {
+        padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    }
+}
+
+/* Ajuste para modo navegador (não-PWA) no iPhone */
+@media (display-mode: browser) {
+    .time-display {
+        margin-top: 60px; /* Compensa a barra do navegador */
+    }
+    
+    .lock-content {
+        padding-bottom: 60px; /* Espaço extra para não ficar sobre o teclado */
+    }
+}
+
+/* Modo PWA (standalone) */
+@media (display-mode: standalone) {
+    .time-display {
+        margin-top: 0;
     }
 }

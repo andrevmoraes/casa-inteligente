@@ -207,7 +207,7 @@ document.addEventListener('mouseup', (e) => {
     numpadContainer.classList.remove('dragging');
 });
 
-// Atualizar display de senha
+// Atualizar display de senha (otimizado para velocidade)
 function updatePasswordDisplay() {
     // Mostrar/ocultar placeholder
     if (password.length > 0) {
@@ -216,18 +216,40 @@ function updatePasswordDisplay() {
         passwordPlaceholder.classList.remove('hidden');
     }
     
-    // Atualizar dots
-    passwordDots.innerHTML = '';
+    // Atualizar dots usando DocumentFragment para melhor performance
+    const fragment = document.createDocumentFragment();
     for (let i = 0; i < password.length; i++) {
         const dot = document.createElement('div');
         dot.className = 'dot filled';
-        passwordDots.appendChild(dot);
+        fragment.appendChild(dot);
     }
+    
+    // Limpa e adiciona tudo de uma vez (mais rápido)
+    passwordDots.innerHTML = '';
+    passwordDots.appendChild(fragment);
 }
 
-// Teclado numérico
+// Teclado numérico - usando touchstart e mousedown para captura imediata
 numButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+    let lastTouchTime = 0;
+    let isProcessing = false;
+    
+    const handleInput = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Prevenir eventos duplicados (touch + mouse no mesmo clique)
+        const now = Date.now();
+        if (now - lastTouchTime < 50) return;
+        lastTouchTime = now;
+        
+        // Prevenir processamento simultâneo
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        // Feedback visual instantâneo
+        btn.style.background = 'rgba(255, 255, 255, 0.2)';
+        
         const num = btn.dataset.num;
         const action = btn.dataset.action;
         
@@ -247,7 +269,23 @@ numButtons.forEach(btn => {
             password = password.slice(0, -1);
             updatePasswordDisplay();
         }
-    });
+        
+        // Remove feedback visual
+        setTimeout(() => {
+            btn.style.background = '';
+        }, 100);
+        
+        // Libera para próximo input
+        setTimeout(() => {
+            isProcessing = false;
+        }, 10);
+    };
+    
+    // Touch para mobile (prioridade)
+    btn.addEventListener('touchstart', handleInput, { passive: false });
+    
+    // Mouse para desktop (fallback)
+    btn.addEventListener('mousedown', handleInput);
 });
 
 // Funções removidas (não usadas mais)
