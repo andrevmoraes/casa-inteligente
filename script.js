@@ -23,10 +23,10 @@ document.addEventListener('touchend', (e) => {
 // Estado da aplicação
 let password = '';
 let isUnlocking = false;
-let touchStartY = 0;
-let touchCurrentY = 0;
-let isDragging = false;
+let isDragging = false; // Arrasto por toque
+let isMouseDragging = false; // Arrasto por mouse
 let numpadHeight = 0;
+let isInitialized = false;
 
 // Elementos
 const lockScreen = document.getElementById('lockScreen');
@@ -39,17 +39,30 @@ const passwordPlaceholder = document.getElementById('passwordPlaceholder');
 const passwordError = document.getElementById('passwordError');
 const numButtons = document.querySelectorAll('.num-btn');
 
-// Calcular altura do teclado e abrir automaticamente
-setTimeout(() => {
+// Inicialização da UI
+function initializeUI() {
+    if (isInitialized) return;
+    isInitialized = true;
+
     numpadHeight = numpadContainer.offsetHeight;
     
-    // Abre o teclado automaticamente com animação suave
+    // Esconde o teclado para a animação inicial
+    numpadContainer.classList.remove('visible');
+    numpadContainer.style.transform = 'translateY(100%)';
+
+    // Abre o teclado automaticamente com animação
     setTimeout(() => {
         lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
         numpadContainer.classList.add('visible');
         numpadContainer.style.transform = 'translateY(0)';
     }, 200);
-}, 100);
+}
+
+// Inicia a UI quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+    // Atraso para garantir que o layout CSS foi aplicado
+    setTimeout(initializeUI, 100); 
+});
 
 // Atualizar relógio
 function updateClock() {
@@ -76,143 +89,6 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// Touch handlers para arrastar
-lockScreen.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-    isDragging = true;
-    lockScreen.classList.add('dragging');
-    numpadContainer.classList.add('dragging');
-});
-
-lockScreen.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    
-    touchCurrentY = e.touches[0].clientY;
-    const diff = touchStartY - touchCurrentY;
-    
-    // Subindo (diff > 0)
-    if (diff > 0) {
-        const progress = Math.min(diff / numpadHeight, 1);
-        lockScreen.style.transform = `translateY(-${diff}px)`;
-        numpadContainer.style.transform = `translateY(${(1 - progress) * 100}%)`;
-    }
-    // Descendo (diff < 0) - só funciona se o teclado estiver visível
-    else if (diff < 0 && numpadContainer.classList.contains('visible')) {
-        const absDiff = Math.abs(diff);
-        const progress = Math.min(absDiff / numpadHeight, 1);
-        
-        // Tela de bloqueio desce junto
-        lockScreen.style.transform = `translateY(-${numpadHeight - absDiff}px)`;
-        // Teclado desce
-        numpadContainer.style.transform = `translateY(${progress * 100}%)`;
-    }
-});
-
-lockScreen.addEventListener('touchend', () => {
-    if (!isDragging) return;
-    
-    const diff = touchStartY - touchCurrentY;
-    const threshold = 30; // Mínimo de 30px de arrasto
-    
-    // Subindo - abre o teclado
-    if (diff > threshold) {
-        lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
-        numpadContainer.classList.add('visible');
-        numpadContainer.style.transform = 'translateY(0)';
-    }
-    // Descendo - fecha o teclado
-    else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
-        lockScreen.style.transform = '';
-        numpadContainer.classList.remove('visible');
-        numpadContainer.style.transform = 'translateY(100%)';
-        password = '';
-        updatePasswordDisplay();
-        clearFeedback();
-    }
-    // Volta para posição atual
-    else {
-        if (numpadContainer.classList.contains('visible')) {
-            lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
-            numpadContainer.style.transform = 'translateY(0)';
-        } else {
-            lockScreen.style.transform = '';
-            numpadContainer.style.transform = 'translateY(100%)';
-        }
-    }
-    
-    isDragging = false;
-    lockScreen.classList.remove('dragging');
-    numpadContainer.classList.remove('dragging');
-});
-
-// Mouse handlers (para desktop)
-let isMouseDragging = false;
-let mouseStartY = 0;
-
-lockScreen.addEventListener('mousedown', (e) => {
-    mouseStartY = e.clientY;
-    isMouseDragging = true;
-    lockScreen.classList.add('dragging');
-    numpadContainer.classList.add('dragging');
-});
-
-document.addEventListener('mousemove', (e) => {
-    if (!isMouseDragging) return;
-    
-    const diff = mouseStartY - e.clientY;
-    
-    // Subindo (diff > 0)
-    if (diff > 0) {
-        const progress = Math.min(diff / numpadHeight, 1);
-        lockScreen.style.transform = `translateY(-${diff}px)`;
-        numpadContainer.style.transform = `translateY(${(1 - progress) * 100}%)`;
-    }
-    // Descendo (diff < 0) - só funciona se o teclado estiver visível
-    else if (diff < 0 && numpadContainer.classList.contains('visible')) {
-        const absDiff = Math.abs(diff);
-        const progress = Math.min(absDiff / numpadHeight, 1);
-        
-        lockScreen.style.transform = `translateY(-${numpadHeight - absDiff}px)`;
-        numpadContainer.style.transform = `translateY(${progress * 100}%)`;
-    }
-});
-
-document.addEventListener('mouseup', (e) => {
-    if (!isMouseDragging) return;
-    
-    const diff = mouseStartY - e.clientY;
-    const threshold = 30; // Mínimo de 30px de arrasto
-    
-    // Subindo - abre o teclado
-    if (diff > threshold) {
-        lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
-        numpadContainer.classList.add('visible');
-        numpadContainer.style.transform = 'translateY(0)';
-    }
-    // Descendo - fecha o teclado
-    else if (diff < -threshold && numpadContainer.classList.contains('visible')) {
-        lockScreen.style.transform = '';
-        numpadContainer.classList.remove('visible');
-        numpadContainer.style.transform = 'translateY(100%)';
-        password = '';
-        updatePasswordDisplay();
-        clearFeedback();
-    }
-    // Volta para posição atual
-    else {
-        if (numpadContainer.classList.contains('visible')) {
-            lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
-            numpadContainer.style.transform = 'translateY(0)';
-        } else {
-            lockScreen.style.transform = '';
-            numpadContainer.style.transform = 'translateY(100%)';
-        }
-    }
-    
-    isMouseDragging = false;
-    lockScreen.classList.remove('dragging');
-    numpadContainer.classList.remove('dragging');
-});
 
 // Atualizar display de senha (otimizado para velocidade)
 function updatePasswordDisplay() {
@@ -369,4 +245,208 @@ document.addEventListener('keydown', (e) => {
     } else if (e.key === 'Escape') {
         resetToLockScreen();
     }
+});
+
+// ===================================================================
+// LÓGICA UNIFICADA PARA O ARRASTO (TOQUE E MOUSE)
+// ===================================================================
+
+let dragStartY = 0;
+let dragCurrentY = 0;
+let dragSource = null; // 'lockScreen' ou 'numpad'
+
+function handleDragStart(source, startY, evt) {
+    // Ignora se já estiver arrastando
+    if (isDragging || isMouseDragging) return;
+    if (!evt) return;
+
+    if (source === 'numpad' && evt.target.closest('.num-btn')) {
+        return; // Não inicia o arrasto se clicar em um botão do numpad
+    }
+
+    dragSource = source;
+    dragStartY = startY;
+    dragCurrentY = startY;
+
+    // Define a flag correta para o tipo de evento
+    if (evt.type.startsWith('touch')) {
+        isDragging = true;
+    } else {
+        isMouseDragging = true;
+        evt.preventDefault(); // Evita seleção de texto durante o arrasto
+    }
+
+    // Desativa as transições durante o arrasto para um movimento direto
+    lockScreen.classList.add('dragging');
+    numpadContainer.classList.add('dragging');
+}
+
+function handleDragMove(currentY) {
+    if (!isDragging && !isMouseDragging) return;
+
+    dragCurrentY = currentY;
+    const diff = dragStartY - dragCurrentY;
+
+    // O movimento é relativo à posição inicial do teclado (aberto)
+    const initialOffset = numpadContainer.classList.contains('visible') ? numpadHeight : 0;
+    
+    // Calcula o novo deslocamento da tela de bloqueio
+    let newLockScreenY = -initialOffset + (dragCurrentY - dragStartY);
+    
+    // Limita o movimento para não arrastar mais que o necessário
+    if (newLockScreenY > 0) newLockScreenY = 0; // Limite superior (fechado)
+    if (newLockScreenY < -numpadHeight) newLockScreenY = -numpadHeight; // Limite inferior (aberto)
+
+    if (dragSource === 'lockScreen' && newLockScreenY < 0 && !numpadContainer.classList.contains('visible')) {
+        numpadContainer.classList.add('visible');
+    }
+
+    lockScreen.style.transform = `translateY(${newLockScreenY}px)`;
+
+    // O teclado acompanha o movimento da tela de bloqueio
+    const numpadProgress = 1 - (Math.abs(newLockScreenY) / numpadHeight);
+    const clampedProgress = Math.min(Math.max(numpadProgress, 0), 1);
+    numpadContainer.style.transform = `translateY(${clampedProgress * 100}%)`;
+}
+
+function handleDragEnd() {
+    if (!isDragging && !isMouseDragging) return;
+
+    const diff = dragStartY - dragCurrentY;
+    const threshold = 50; // Limite de arrasto para acionar a ação
+
+    // Garante que as transições CSS serão reativadas
+    lockScreen.classList.remove('dragging');
+    numpadContainer.classList.remove('dragging');
+
+    // Determina a ação final baseada na origem e direção do arrasto
+    const shouldClose = (dragSource === 'lockScreen' && diff < -threshold) || 
+                        (dragSource === 'numpad' && diff < -threshold);
+    
+    const shouldOpen = dragSource === 'lockScreen' && diff > threshold;
+
+    const wasVisible = numpadContainer.classList.contains('visible');
+
+    const finalizePosition = () => {
+        if (shouldClose) {
+            lockScreen.style.transform = '';
+            numpadContainer.classList.remove('visible');
+            numpadContainer.style.transform = 'translateY(100%)';
+            password = '';
+            updatePasswordDisplay();
+            clearFeedback();
+        } else if (shouldOpen) {
+            numpadContainer.classList.add('visible');
+            lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+            numpadContainer.style.transform = 'translateY(0)';
+        } else {
+            if (wasVisible) {
+                numpadContainer.classList.add('visible');
+                lockScreen.style.transform = `translateY(-${numpadHeight}px)`;
+                numpadContainer.style.transform = 'translateY(0)';
+            } else {
+                lockScreen.style.transform = '';
+                numpadContainer.classList.remove('visible');
+                numpadContainer.style.transform = 'translateY(100%)';
+            }
+        }
+    };
+
+    // Aguarda dois frames para garantir que as transições estejam ativas
+    requestAnimationFrame(() => {
+        requestAnimationFrame(finalizePosition);
+    });
+
+    // Limpa as variáveis de estado
+    isDragging = false;
+    isMouseDragging = false;
+    dragStartY = 0;
+    dragCurrentY = 0;
+    dragSource = null;
+}
+
+// ===================================================================
+// EVENT LISTENERS
+// ===================================================================
+
+// Touch handlers
+lockScreen.addEventListener('touchstart', (e) => handleDragStart('lockScreen', e.touches[0].clientY, e));
+lockScreen.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientY));
+lockScreen.addEventListener('touchend', handleDragEnd);
+lockScreen.addEventListener('touchcancel', handleDragEnd);
+
+numpadContainer.addEventListener('touchstart', (e) => handleDragStart('numpad', e.touches[0].clientY, e));
+numpadContainer.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientY));
+numpadContainer.addEventListener('touchend', handleDragEnd);
+numpadContainer.addEventListener('touchcancel', handleDragEnd);
+
+// Mouse handlers (para desktop)
+lockScreen.addEventListener('mousedown', (e) => handleDragStart('lockScreen', e.clientY, e));
+numpadContainer.addEventListener('mousedown', (e) => handleDragStart('numpad', e.clientY, e));
+
+document.addEventListener('mousemove', (e) => handleDragMove(e.clientY));
+document.addEventListener('mouseup', handleDragEnd);
+document.addEventListener('mouseleave', handleDragEnd);
+window.addEventListener('blur', handleDragEnd);
+
+
+// ===================================================================
+// LÓGICA DE MANIPULAÇÃO DE SENHA
+// ===================================================================
+numButtons.forEach(button => {
+    let lastTouchTime = 0;
+    let isProcessing = false;
+    
+    const handleInput = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Prevenir eventos duplicados (touch + mouse no mesmo clique)
+        const now = Date.now();
+        if (now - lastTouchTime < 50) return;
+        lastTouchTime = now;
+        
+        // Prevenir processamento simultâneo
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        // Feedback visual instantâneo
+        button.style.background = 'rgba(255, 255, 255, 0.2)';
+        
+        const num = button.dataset.num;
+        const action = button.dataset.action;
+        
+        if (num && password.length < 8) {
+            // Esconde erro quando começa a digitar
+            passwordError.classList.add('hidden');
+            
+            password += num;
+            updatePasswordDisplay();
+            
+            // Verifica automaticamente a senha
+            checkPasswordAutomatically();
+        } else if (action === 'delete' && password.length > 0) {
+            // Esconde erro quando apaga
+            passwordError.classList.add('hidden');
+            
+            password = password.slice(0, -1);
+            updatePasswordDisplay();
+        }
+        
+        // Remove feedback visual
+        setTimeout(() => {
+            button.style.background = '';
+        }, 100);
+        
+        // Libera para próximo input
+        setTimeout(() => {
+            isProcessing = false;
+        }, 10);
+    };
+    
+    // Touch para mobile (prioridade)
+    button.addEventListener('touchstart', handleInput, { passive: false });
+    
+    // Mouse para desktop (fallback)
+    button.addEventListener('mousedown', handleInput);
 });

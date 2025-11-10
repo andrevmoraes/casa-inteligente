@@ -56,13 +56,6 @@ body {
     will-change: transform;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    animation: initialLoad 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes initialLoad {
-    from {
-        transform: translateY(0);
-    }
 }
 
 .lock-screen.dragging {
@@ -121,15 +114,17 @@ body {
     padding: 0;
     padding-bottom: env(safe-area-inset-bottom);
     transform: translateY(100%);
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 5;
-    will-change: transform;
-    opacity: 0;
+    will-change: transform, opacity;
+    opacity: 1; /* Começa visível para o JS calcular a altura */
 }
 
-.numpad-container.visible {
-    transform: translateY(0);
-    opacity: 1;
+.numpad-container:not(.visible) {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .numpad-container.dragging {
@@ -146,6 +141,12 @@ body {
     margin-bottom: 15px;
     padding: 0 20px;
     position: relative;
+    cursor: grab;
+    touch-action: pan-y;
+}
+
+.password-display:active {
+    cursor: grabbing;
 }
 
 .password-placeholder {
